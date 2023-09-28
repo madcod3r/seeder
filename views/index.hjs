@@ -62,32 +62,8 @@
 				background-color: black;
 				color: white;
 			}
-			video::cue(:lang(en)) {
-				color: yellow;
-			}
 
-			::cue(:lang(en)) {
-				color: yellow;
-			}
-			::cue([lang="en"]) {
-				color: yellow;
-			}
-			::cue([srcLang="en"]) {
-				color: yellow;
-			}
-			::cue(:default) {
-				color: yellow;
-			}
-			::cue(::first-line) {
-				color: yellow;
-			}
-			::cue::first-line {
-				color: yellow;
-			}
-			::cue:active {
-				color: yellow;
-			}
-			::cue(:active) {
+			::cue(:lang(lang0)) {
 				color: yellow;
 			}
 		</style>
@@ -158,18 +134,18 @@
 		//
 		//	2.	Check every second if there is a new Magnet file in the client
 		//
-		client_magnet_list();
+		//client_magnet_list();
 
 		//
 		//	3.	Get every second the stats of the client, not individual
 		//		torrent.
 		//
-		check_for_client_stats();
+		//check_for_client_stats();
 
 		//
 		//	4.	Check every second of there is some errors from the client
 		//
-		check_for_client_errors();
+		//check_for_client_errors();
 
 		//	                  _____   _   _          _
 		//	                 / ____| | | (_)        | |
@@ -295,7 +271,7 @@
 			currentFileName = filename;
 
 
-			let userSubs = JSON.parse(localStorage.getItem('subs'));
+			/*let userSubs = JSON.parse(localStorage.getItem('subs'));
 			if (userSubs && typeof userSubs[filename] !== 'undefined' && userSubs[filename].length) {
 				const subs = userSubs[filename]
 
@@ -317,14 +293,17 @@
 
 					$('video')[0].textTracks[i].mode = 'showing';
 				}
+			}*/
 
-				/*for (let i = 0; i < subs.length; i++) {
-					let track = $('video')[0].addTextTrack('subtitles')
-					track.src = 'subtitles/' + subs[i];
-					track.mode = 'showing';
+			// remove prev tracks
+			let track = '<track ' +
+					'label="English" ' +
+					'kind="subtitles" ' +
+					'srcLang="en" ' +
+					'src="/video/subs/' + filename + '" ' +
+					'default />'
 
-				}*/
-			}
+			$('video').html(track);
 
 			//
 			//	3.	Set the proper SRC of the video player
@@ -635,6 +614,12 @@
 		}
 
 		$('#upload_subs').change(function() {
+			const lastVideoFile = localStorage.getItem('filename')
+			if (!lastVideoFile) {
+				alert('you have to choose any video file to upload subtitles')
+				return
+			}
+
 			// upload subs to the server
 
 			let subFileNames = [];
@@ -649,8 +634,8 @@
 
 
 			$.ajax({
-				url: api + '/upload',
-				type: "POST",
+				url: api + '/subs/' + lastVideoFile,
+				type: 'POST',
 				data:  new FormData($(this).parent()[0]),
 				contentType: false,
 				cache: false,
@@ -666,20 +651,16 @@
 					// remove prev tracks
 					$('video track').remove()
 
-					for (let i = 0; i < subFileNames.length; i++) {
-						let vttSubFileName = subFileNames[i].replace('.srt', '.vtt');
+					let track = '<track ' +
+							'label="English" ' +
+							'kind="subtitles" ' +
+							'srcLang="en" ' +
+							'src="/video/subs/' + lastVideoFile + '" ' +
+							'default />'
 
-						let track = '<track ' +
-								'label="English' + i + '" ' +
-								'kind="subtitles" ' +
-								'srcLang="en' + i + '" ' +
-								'src="subtitles/' + vttSubFileName + '" ' +
-								'default />'
+					$('video').html(track);
 
-						$('video').append(track);
-
-						$('video')[0].textTracks[i].mode = 'showing';
-					}
+					$('video')[0].textTracks[0].mode = 'showing';
 				},
 				error: function(e)
 				{
@@ -719,7 +700,7 @@
 		}, 200);
 
 		// save last time of selected video
-		let userSubs = JSON.parse(localStorage.getItem('subs'));
+		/*let userSubs = JSON.parse(localStorage.getItem('subs'));
 		if (!userSubs) {
 			let userSubs = {
 				'The Wire S01E01.mp4': ['en.vtt', 'ru.vtt'],
@@ -727,7 +708,7 @@
 			};
 
 			localStorage.setItem('subs', JSON.stringify(userSubs));
-		}
+		}*/
 	});
 
 	//

@@ -1,6 +1,9 @@
 import express from 'express';
 import WebTorrent from 'webtorrent';
 import request from 'request';
+import fs from "fs";
+import crypto from 'crypto'
+import subsrt from 'subsrt'
 
 const router = express.Router();
 
@@ -472,7 +475,7 @@ router.get('/subtitles/:fileName', function(req, res, next) {
 });
 
 
-router.post('/upload', function(req, res, next) {
+router.post('/subs/:fileName', function(req, res, next) {
     try {
         if(!req.files) {
             res.send({
@@ -482,29 +485,110 @@ router.post('/upload', function(req, res, next) {
         } else {
             let data = [];
 
-            //loop all files
+            const fileName = req.params.fileName
+            const hash = crypto.createHash('md5').update(fileName).digest('hex')
+            const filePath = 'subtitles/' + hash
+
+            if (Array.isArray(req.files.subs)) {
+                let captions = []
+
+                req.files.subs.forEach(file => {
+                    let subtitle = file.data
+                        .toString('utf8')
+                        .replace(/\r\n/g, "\n")
+                        .replace(/\n/g, "\r\n")
+
+                    captions.push(subsrt.parse(subtitle))
+                })
+
+                const mainCaption = captions.shift()
+
+                mainCaption.forEach((caption, number) => {
+                    caption.content = `<lang lang0>${caption.content}</lang>`
+                    caption.text = `<lang lang0>${caption.text}</lang>`
+
+                    captions.forEach((altCaption, i) => {
+                        altCaption.forEach(subLine => {
+                            if (subLine.start === caption.start && subLine.end === caption.end) {
+                                caption.content += "\r\n" + `<lang lang${i + 1}>${subLine.content}</lang>`
+                                caption.text += "\r\n" + `<lang lang${i + 1}>${subLine.text}</lang>`
+                            }
+                        })
+                    })
+                })
+
+                const content = subsrt.build(mainCaption, { format: 'vtt', eol: "\r\n" })
+
+                fs.writeFileSync(filePath, content)
+
+            } else {
+
+                let subtitle = req.files.subs.data
+                    .toString('utf8')
+                    .replace(/\r\n/g, "\n")
+                    .replace(/\n/g, "\r\n")
+
+                const captions = subsrt.parse(subtitle)
+
+                const content = subsrt.build(captions, { format: 'vtt', eol: "\r\n" })
+
+                fs.writeFileSync(filePath, content)
+            }
+
+
+            return res.send({
+                status: true,
+                message: 'Files are uploaded'
+            });
+
+            //loop all files and merge subtitles
             for (let i = 0; i < req.files.subs.length; i++) {
 
+                let subtitle = req.files.subs[i].data.toString('utf8')
+                console.log('substring', subtitle)
+
+                const captions = subsrt.parse(subtitle);
+
+                const content = subsrt.build(captions, { format: 'vtt', eol: "\r\n" });
+
+                //Write content to .vtt file
+                fs.writeFileSync(filePath, content)
+
+                /*let srt = req.files.subs[i]
+                    .replace(/\r\n/g, "\n")
+                    .replace(/\n/g, "\r\n");*/
+
                 //move photo to uploads directory
-                req.files.subs[i].mv('subtitles/' + req.files.subs[i].name).then(r => {
+               /* req.files.subs[i].mv('subtitles/' + req.files.subs[i].name).then(r => {
                     //push file details
                     data.push({
                         name: req.files.subs[i].name,
                         mimetype: req.files.subs[i].mimetype,
                         size: req.files.subs[i].size
                     });
-                });
+                });*/
             }
             //return response
             res.send({
                 status: true,
-                message: 'Files are uploaded',
-                data: data
+                message: 'Files are uploaded'
             });
         }
     } catch (err) {
         console.log(err)
         res.status(500).send(err);
+    }
+});
+
+router.get('/subs/:fileName', function (req, res, next) {
+    const fileName = req.params.fileName
+    const hash = crypto.createHash('md5').update(fileName).digest('hex')
+    const filePath = 'subtitles/' + hash
+
+    if (fs.existsSync(filePath)) {
+        res.send(fs.readFileSync(filePath, 'utf8'))
+    } else {
+        res.send(`the subtitles for "${fileName}" doesn't exists`)
     }
 });
 
