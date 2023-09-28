@@ -177,12 +177,6 @@ router.get('/stream/:magnet/:file_name', async function (req, res, next) {
         return next(err);
     }
 
-    /*for (let i = 0; i < torrent.files.length; i++) {
-        if (torrent.files[i].name == req.params.file_name) {
-            file = torrent.files[i];
-        }
-    }*/
-
     //
     //	5.	Save the range the browser is asking for in a clear and
     //		reusable variable
@@ -193,8 +187,6 @@ router.get('/stream/:magnet/:file_name', async function (req, res, next) {
     //		EXAMPLE: bytes=65534-33357823
     //
     const range = req.headers.range;
-
-    console.log(range);
 
     //
     //	6.	Make sure the browser ask for a range to be sent.
@@ -315,13 +307,6 @@ router.get('/list', function(req, res, next) {
     //
     res.status(200);
     res.json(torrent);
-
-    // subtitles/en.vtt
-    // subtitles/ru.vtt
-
-    // subtitles/The Wire - 1x02 - The Detail.en.vtt
-    // subtitles/The_Wire_102_The_Detail.vtt
-
 });
 
 //
@@ -535,40 +520,6 @@ router.post('/subs/:fileName', function(req, res, next) {
                 fs.writeFileSync(filePath, content)
             }
 
-
-            return res.send({
-                status: true,
-                message: 'Files are uploaded'
-            });
-
-            //loop all files and merge subtitles
-            for (let i = 0; i < req.files.subs.length; i++) {
-
-                let subtitle = req.files.subs[i].data.toString('utf8')
-                console.log('substring', subtitle)
-
-                const captions = subsrt.parse(subtitle);
-
-                const content = subsrt.build(captions, { format: 'vtt', eol: "\r\n" });
-
-                //Write content to .vtt file
-                fs.writeFileSync(filePath, content)
-
-                /*let srt = req.files.subs[i]
-                    .replace(/\r\n/g, "\n")
-                    .replace(/\n/g, "\r\n");*/
-
-                //move photo to uploads directory
-               /* req.files.subs[i].mv('subtitles/' + req.files.subs[i].name).then(r => {
-                    //push file details
-                    data.push({
-                        name: req.files.subs[i].name,
-                        mimetype: req.files.subs[i].mimetype,
-                        size: req.files.subs[i].size
-                    });
-                });*/
-            }
-            //return response
             res.send({
                 status: true,
                 message: 'Files are uploaded'
