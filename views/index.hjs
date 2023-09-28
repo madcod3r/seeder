@@ -322,6 +322,7 @@
 				$('video')[0].textTracks[i].mode = 'showing';
 			}
 
+			$("#subtitles").empty()
 			$.get(api + "/subtitles/" + filename, function (data) {
 				$.each(data.data, function (index, subtitle) {
 
