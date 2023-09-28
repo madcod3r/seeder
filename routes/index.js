@@ -18,14 +18,13 @@ router.get('/*', function(req, res, next) {
     const filePath = 'public/' + req.url
     try {
         if (fs.existsSync(filePath)) {
-            res.sendFile(filePath)
+            res.send(fs.readFileSync(filePath, 'utf8'))
         } else {
             next()
         }
     } catch(err) {
         console.error(err)
     }
-
 });
 
 
