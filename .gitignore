@@ -1,2 +1,4 @@
 .idea
 node_modules
+
+sudo ln -s /usr/local/etc/nginx/sites-available/madcoder /usr/local/etc/nginx/sites-enabled/

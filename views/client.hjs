@@ -1,0 +1,373 @@
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="">
+
+	<title>🍿 Movie Time (Clients-side torrent)</title>
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/webtorrent@1.8.0/webtorrent.min.js"></script>
+
+	<style type="text/css">
+
+		body {
+			background: black;
+			font-family: monospace;
+			color: #958826;
+			text-align: center;
+		}
+
+		a {
+			color: #ff8400;
+		}
+
+		a:hover {
+			color: #ffa700;
+		}
+
+		a.toggle {
+			text-decoration: none;
+		}
+
+		a.toggle:hover {
+			text-decoration: underline;
+			text-decoration-style: dashed;
+		}
+
+		.url {
+			color: #ff8400;
+		}
+
+		.url:hover {
+			text-decoration: underline;
+			color: #ffa700;
+		}
+
+		ul {
+			display: inline-block;
+			vertical-align: top;
+			list-style-type: decimal;
+			text-align: left;
+		}
+
+		ul li {
+		}
+
+		.url:hover {
+			text-decoration: underline;
+			cursor: pointer;
+		}
+
+		table#stats {
+			width: 200px;
+			display: inline-block;
+		}
+
+		video {
+			margin: 100px 0;
+		}
+
+		::cue {
+			background-color: black;
+			color: white;
+		}
+
+		::cue(:lang(en)) {
+			color: yellow;
+		}
+	</style>
+
+</head>
+
+<body>
+
+<div id="video">
+	<video autoplay src="" height="360px" controls></video>
+</div>
+
+<h3>Samples Torrents (Magnet links):</h3>
+
+<ul id="demo_magnets">
+	<li><span class="magnet url" data-magnet="magnet:?xt=urn:btih:35205e693f12d05c3a88d03aa5b39619e9c772a7&dn=The+Wire+Complete+Mp4+1080p&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337&tr=udp%3A%2F%2Fexplodie.org%3A6969&tr=udp%3A%2F%2Ftracker.empire-js.us%3A1337">The Wire [S01-05] (2002-2008) mp4 1080p</span></li>
+</ul>
+
+<input name="magnet" type="hidden" />
+
+<h3>Torrent Contents: [ <a href="#" id="contents_toggle" class="toggle">hide</a> ]</h3>
+
+<div id="content"></div>
+
+<h3>Client Stats:</h3>
+
+<table id="stats">
+	<tr>
+		<td>Progress:</td>
+		<td>0%</td>
+	</tr>
+	<tr>
+		<td>Speed:</td>
+		<td>0 Byte/s</td>
+	</tr>
+</table>
+
+<h3>Client Errors:</h3>
+
+<ul id="errors">
+	<li>N/A</li>
+</ul>
+
+</body>
+
+<script>
+
+	let currentFileName
+
+	const client = new WebTorrent()
+
+	$(function() {
+
+		client.on('download', function(bytes) {
+
+			const stats = {
+				progress: Math.round(client.progress * 100 * 100) / 100,
+				downloadSpeed: client.downloadSpeed
+			}
+
+			const li = "<tr>" +
+					"<td>Progress:</td>" +
+					"<td>" + stats.progress + "%</td>" +
+					"</tr>" +
+					"<tr>" +
+					"<td>Speed:</td>" +
+					"<td>" + format_bytes(stats.downloadSpeed, 0) + "/s</td>" +
+					"</tr>"
+
+
+			$("#stats").html(li)
+		});
+
+		client.on('error', function(err) {
+			$("#errors").html('<li class="error">' + err + '</li>')
+		});
+
+
+		$('#demo_magnets').on('click', '.magnet', function() {
+			const magnet = $(this).data('magnet')
+
+			$('input[name="magnet"]').val(magnet)
+
+			load();
+		});
+
+		// show\hide content
+		$('#contents_toggle').click(function (e) {
+			e.preventDefault();
+
+			$('#content').toggle();
+
+			$(this).text($('#content').is(':visible') ? 'hide' : 'show');
+		})
+
+		// show\hide content
+		$('#subtitles_toggle').click(function (e) {
+			e.preventDefault();
+
+			$('#subtitles').toggle();
+
+			$(this).text($('#subtitles').is(':visible') ? 'hide' : 'show');
+		})
+
+		$('#content').on('click', '.file', function() {
+			const magnet = $('input[name="magnet"]').val()
+
+			const filename = $(this).attr("data-name")
+
+			playVideo(magnet, filename)
+		});
+
+		function load() {
+			$('#load').prop('disabled', true);
+
+			$("#content").html('<b>Loading...</b>');
+
+
+			const magnet = $('input[name="magnet"]').val();
+
+			if(!magnet) {
+				return console.error("No Magnet Hash");
+			}
+
+			// save last loaded magnet to localstorage
+			localStorage.setItem('magnet', magnet);
+
+			client.add(magnet, function (torrent) {
+
+				$('#content').html('<ul>')
+
+				for (let i = 0; i < torrent.files.length; i++) {
+					$('#content ul').append('<li><span class="url file" data-name="' + torrent.files[i].name + '">'+ torrent.files[i].name + '</span> (' + format_bytes(torrent.files[i].length, 0) + ')</li>');
+
+				}
+
+				// Loads last used video file from localstorage
+				const lastVideoFile = localStorage.getItem('filename')
+				if (lastVideoFile) {
+					console.log('The video filename loaded from localstorage: ', lastVideoFile)
+
+					playVideo(magnet, lastVideoFile)
+				}
+			})
+		}
+
+		function playVideo(magnet, filename) {
+			localStorage.setItem('magnet', magnet)
+			localStorage.setItem('filename', filename)
+
+			currentFileName = filename;
+
+			const torrent = client.get(magnet)
+
+			const videoFile = torrent.files.find(function (file) {
+				return file.name === filename
+			})
+
+			if (typeof videoFile !== 'undefined') {
+				$('video').remove();
+
+				videoFile.appendTo('div#video')
+
+				// configurate
+				$('video').prop('autoplay', true)
+				$('video').prop('controls', true)
+				$('video').prop('height', '360')
+
+				const video = $('video')[0]
+
+				// video start time
+				let startTimes = JSON.parse(localStorage.getItem('startTimes'));
+				if (startTimes && typeof startTimes[filename] !== 'undefined') {
+					video.currentTime = startTimes[filename]
+				} else {
+					video.currentTime = 0
+				}
+
+				// video subs
+				let userSubs = JSON.parse(localStorage.getItem('subs'));
+				if (userSubs && typeof userSubs[filename] !== 'undefined' && userSubs[filename].length) {
+					const subs = userSubs[filename]
+
+					console.log('loading subs:', subs);
+
+					// remove prev tracks
+					$('video track').remove()
+
+					for (let i = 0; i < subs.length; i++) {
+
+						let track = '<track ' +
+								'label="English' + i + '" ' +
+								'kind="subtitles" ' +
+								'srcLang="en' + i + '" ' +
+								'src="subtitles/' + subs[i] + '" ' +
+								'default />'
+
+						$('video').append(track);
+
+						video.textTracks[i].mode = 'showing';
+					}
+				}
+
+				for (let i = 0; i < video.textTracks.length; i++) {
+					video.textTracks[i].mode = 'showing';
+				}
+
+				// play the vid
+				const isPlaying = video.currentTime > 0 && !video.paused && !video.ended
+						&& video.readyState > video.HAVE_CURRENT_DATA;
+
+				if (!isPlaying) {
+					video.play();
+				}
+
+			} else {
+				console.error('cannot find a video file: "' + filename + '"')
+			}
+		}
+
+		// Loads torrent by magnet stored in localstorage on page loads
+		const magnet = localStorage.getItem('magnet')
+		if (magnet) {
+			console.log('The magnet loaded from localstorage: ', magnet)
+
+			$('input[name="magnet"]').val(localStorage.getItem('magnet'))
+
+			load()
+		}
+
+		// Saves current video time to localstorage
+		setInterval(function() {
+			if (currentFileName) {
+				let startTimes = JSON.parse(localStorage.getItem('startTimes')) || {}
+
+				startTimes[currentFileName] = $('video')[0].currentTime
+
+				localStorage.setItem('startTimes', JSON.stringify(startTimes))
+			}
+		}, 200);
+
+		// save last time of selected video
+		let userSubs = JSON.parse(localStorage.getItem('subs'));
+		if (!userSubs) {
+			let userSubs = {
+				'The Wire S01E01.mp4': ['en.vtt', 'ru.vtt'],
+				'The Wire S01E02.mp4': ['The Wire - 1x02 - The Detail.en.vtt', 'The_Wire_102_The_Detail.vtt']
+			};
+
+			localStorage.setItem('subs', JSON.stringify(userSubs));
+		}
+	});
+
+	//
+	//	Convert bytes to a human readable form
+	//
+	function format_bytes(bytes, decimals)
+	{
+		//
+		//	If the size is 0, then we can stop right away.
+		//
+		if(bytes == 0)
+		{
+			return '0 Byte';
+		}
+
+		//
+		//	Convert bytes to kilobytes
+		//
+		var k = 1024;
+
+		//
+		//	Set how many position after decimal to show
+		//
+		var dm = decimals + 1 || 3;
+
+		//
+		//	Array with all the possible formats.
+		//
+		var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+		//
+		//
+		//
+		var i = Math.floor(Math.log(bytes) / Math.log(k));
+
+		//
+		//
+		//
+		return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+	}
+
+</script>
+
+</html>
