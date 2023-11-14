@@ -52,6 +52,12 @@
     			cursor: pointer;
 			}
 
+			pre {
+				white-space: normal;
+				word-break: break-all;
+				width: 500px;
+			}
+
 			video {
 				margin: 100px 0;
 			}
@@ -97,6 +103,8 @@
 		<input type="file" multiple>
 	</form>
 
+	<pre id="magnet"></pre>
+
 	</body>
 
 	<script>
@@ -106,9 +114,11 @@
 			client.seed(this.files, function (torrent) {
 				console.log(torrent)
 				console.log('Client is seeding ' + torrent.magnetURI)
+
+				$('pre#magnet').text(torrent.magnetURI)
 			})
 
-			client.on()
+			//client.on()
 		});
 
 

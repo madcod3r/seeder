@@ -88,13 +88,17 @@
 	<video autoplay src="" height="360px" controls></video>
 </div>
 
+<form>
+	<textarea name="magnet" type="text"></textarea>
+	<button id="download">Download</button>
+</form>
+
 <h3>Samples Torrents (Magnet links):</h3>
 
 <ul id="demo_magnets">
 	<li><span class="magnet url" data-magnet="magnet:?xt=urn:btih:35205e693f12d05c3a88d03aa5b39619e9c772a7&dn=The+Wire+Complete+Mp4+1080p&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337&tr=udp%3A%2F%2Fexplodie.org%3A6969&tr=udp%3A%2F%2Ftracker.empire-js.us%3A1337">The Wire [S01-05] (2002-2008) mp4 1080p</span></li>
+	<li><span class="magnet url" data-magnet="magnet:?xt=urn:btih:515dd3e3a8ce3bb74847343663d3ce161e4aeddd&dn=2023-08-30+02-35-08.mkv&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337&tr=udp%3A%2F%2Fexplodie.org%3A6969&tr=udp%3A%2F%2Ftracker.empire-js.us%3A1337&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com">Some seed</span></li>
 </ul>
-
-<input name="magnet" type="hidden" />
 
 <h3>Torrent Contents: [ <a href="#" id="contents_toggle" class="toggle">hide</a> ]</h3>
 
@@ -157,10 +161,16 @@
 		$('#demo_magnets').on('click', '.magnet', function() {
 			const magnet = $(this).data('magnet')
 
-			$('input[name="magnet"]').val(magnet)
+			$('[name="magnet"]').val(magnet)
 
 			load();
 		});
+
+		$('body').on('click', '#download', function(e) {
+			e.preventDefault();
+
+			load();
+		})
 
 		// show\hide content
 		$('#contents_toggle').click(function (e) {
@@ -181,7 +191,7 @@
 		})
 
 		$('#content').on('click', '.file', function() {
-			const magnet = $('input[name="magnet"]').val()
+			const magnet = $('[name="magnet"]').val()
 
 			const filename = $(this).attr("data-name")
 
@@ -193,8 +203,9 @@
 
 			$("#content").html('<b>Loading...</b>');
 
+			const magnet = $('[name="magnet"]').val();
 
-			const magnet = $('input[name="magnet"]').val();
+			console.log('Downloading the torrent ' + magnet)
 
 			if(!magnet) {
 				return console.error("No Magnet Hash");
@@ -301,7 +312,7 @@
 		if (magnet) {
 			console.log('The magnet loaded from localstorage: ', magnet)
 
-			$('input[name="magnet"]').val(localStorage.getItem('magnet'))
+			$('[name="magnet"]').val(localStorage.getItem('magnet'))
 
 			load()
 		}
